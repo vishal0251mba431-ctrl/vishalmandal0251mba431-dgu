@@ -1,0 +1,239 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Hardened Global Helpers ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'vishal.0251mba431@dgu.ac.in'
+      );
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'surveyRewardUnlocked', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'defaultLocation', 'defaultRoomOrDesk', 'defaultWhatsapp', 'surveyRewardUnlocked', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid == userId && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 150
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && (!('defaultLocation' in data) || (data.defaultLocation is string && data.defaultLocation.size() <= 120))
+        && (!('defaultRoomOrDesk' in data) || (data.defaultRoomOrDesk is string && data.defaultRoomOrDesk.size() <= 80))
+        && (!('defaultWhatsapp' in data) || (data.defaultWhatsapp is string && data.defaultWhatsapp.size() <= 32))
+        && data.surveyRewardUnlocked is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll([
+          'orderId', 'userId', 'customerName', 'whatsapp', 'location', 'roomOrDesk',
+          'items', 'freeEnergyDrinkIncluded', 'promoCodeApplied', 'discountAmount',
+          'deliveryFee', 'subtotal', 'total', 'paymentMethod', 'stage', 'status',
+          'etaSeconds', 'courierName', 'courierBadge', 'courierVehicle', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'orderId', 'userId', 'customerName', 'whatsapp', 'location', 'roomOrDesk',
+          'items', 'freeEnergyDrinkIncluded', 'promoCodeApplied', 'discountAmount',
+          'deliveryFee', 'subtotal', 'total', 'paymentMethod', 'stage', 'status',
+          'etaSeconds', 'courierName', 'courierBadge', 'courierVehicle', 'createdAt', 'updatedAt'
+        ])
+        && data.orderId is string && data.orderId.size() >= 3 && data.orderId.size() <= 32 && isValidId(data.orderId)
+        && data.userId is string && isValidId(data.userId)
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 100
+        && data.whatsapp is string && data.whatsapp.size() >= 5 && data.whatsapp.size() <= 32
+        && data.location is string && data.location.size() >= 2 && data.location.size() <= 120
+        && data.roomOrDesk is string && data.roomOrDesk.size() >= 1 && data.roomOrDesk.size() <= 80
+        && data.items is list && data.items.size() >= 1 && data.items.size() <= 20
+        && data.items[0] is map
+        && data.items[0].keys().hasAll(['id', 'name', 'price', 'quantity'])
+        && data.items[0].keys().hasOnly(['id', 'name', 'price', 'quantity'])
+        && data.items[0].id is string && data.items[0].id.size() <= 64
+        && data.items[0].name is string && data.items[0].name.size() <= 120
+        && data.items[0].price is number && data.items[0].price >= 0 && data.items[0].price <= 5000
+        && data.items[0].quantity is int && data.items[0].quantity >= 1 && data.items[0].quantity <= 20
+        && data.freeEnergyDrinkIncluded is bool
+        && data.promoCodeApplied is string && data.promoCodeApplied.size() <= 32
+        && data.discountAmount is number && data.discountAmount >= 0 && data.discountAmount <= 500
+        && data.deliveryFee is number && data.deliveryFee >= 0 && data.deliveryFee <= 100
+        && data.subtotal is number && data.subtotal >= 1 && data.subtotal <= 20000
+        && data.total is number && data.total >= 0 && data.total <= 20000
+        && data.paymentMethod in ['upi', 'whatsapp']
+        && data.stage is int && data.stage >= 0 && data.stage <= 3
+        && data.status in ['active', 'delivered']
+        && data.etaSeconds is int && data.etaSeconds >= 0 && data.etaSeconds <= 3600
+        && data.courierName is string && data.courierName.size() >= 1 && data.courierName.size() <= 80
+        && data.courierBadge is string && data.courierBadge.size() >= 1 && data.courierBadge.size() <= 32
+        && data.courierVehicle is string && data.courierVehicle.size() >= 1 && data.courierVehicle.size() <= 60
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSurveyResponse(data) {
+      return data.keys().hasAll(['userId', 'orderId', 'npsScore', 'requestedItem', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'orderId', 'npsScore', 'requestedItem', 'createdAt'])
+        && data.userId is string && isValidId(data.userId)
+        && data.orderId is string && data.orderId.size() >= 3 && data.orderId.size() <= 32 && isValidId(data.orderId)
+        && data.npsScore is int && data.npsScore >= 1 && data.npsScore <= 10
+        && data.requestedItem is string && data.requestedItem.size() <= 200
+        && data.createdAt is timestamp;
+    }
+
+    function isValidVenturePlanState(data, userId) {
+      return data.keys().hasAll([
+          'userId', 'selectedScenarioId', 'sellingPrice', 'variableCost',
+          'customers', 'purchasesPerCustomer', 'monthlyFixedCost', 'gtmStatuses', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'selectedScenarioId', 'sellingPrice', 'variableCost',
+          'customers', 'purchasesPerCustomer', 'monthlyFixedCost', 'gtmStatuses', 'updatedAt'
+        ])
+        && data.userId is string && data.userId == userId && isValidId(data.userId)
+        && data.selectedScenarioId in ['conservative', 'base', 'ambitious', 'custom']
+        && data.sellingPrice is number && data.sellingPrice >= 50 && data.sellingPrice <= 1000
+        && data.variableCost is number && data.variableCost >= 20 && data.variableCost <= 800
+        && data.customers is number && data.customers >= 10 && data.customers <= 10000
+        && data.purchasesPerCustomer is number && data.purchasesPerCustomer >= 1 && data.purchasesPerCustomer <= 20
+        && data.monthlyFixedCost is number && data.monthlyFixedCost >= 0 && data.monthlyFixedCost <= 500000
+        && data.gtmStatuses is map
+        && data.gtmStatuses.keys().hasOnly(['Week 1', 'Week 2', 'Week 3', 'Week 4'])
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    // 1. User Profiles (PII isolated strictly to owner or admin)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().email == request.auth.token.email
+        && incoming().surveyRewardUnlocked == false
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && (isOwner(userId) || isAdmin())
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          // Action: Update delivery preferences or profile info
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'displayName', 'photoURL', 'defaultLocation', 'defaultRoomOrDesk',
+            'defaultWhatsapp', 'updatedAt'
+          ]) ||
+          // Action: Unlock survey reward (one-way false -> true)
+          (
+            existing().surveyRewardUnlocked == false &&
+            incoming().surveyRewardUnlocked == true &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['surveyRewardUnlocked', 'updatedAt'])
+          )
+        );
+      allow delete: if false;
+    }
+
+    // 2. Late-Night Orders
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(orderId)
+        && isSignedIn()
+        && isValidOrder(incoming())
+        && incoming().orderId == orderId
+        && incoming().userId == request.auth.uid
+        && incoming().stage == 0
+        && incoming().status == 'active'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(orderId)
+        && isSignedIn()
+        && isValidOrder(incoming())
+        && incoming().orderId == existing().orderId
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          // Action: Advance active order delivery stage monotonically
+          (
+            existing().userId == request.auth.uid
+            && existing().status != 'delivered'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['stage', 'status', 'etaSeconds', 'updatedAt'])
+            && incoming().stage >= existing().stage
+            && (
+              (incoming().stage < 3 && incoming().status == 'active') ||
+              (incoming().stage == 3 && incoming().status == 'delivered' && incoming().etaSeconds == 0)
+            )
+          )
+        );
+      allow delete: if false;
+    }
+
+    // 3. Post-Purchase Pilot Surveys
+    match /survey_responses/{responseId} {
+      allow get: if isValidId(responseId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(responseId)
+        && isSignedIn()
+        && isValidSurveyResponse(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/orders/$(incoming().orderId))
+        && get(/databases/$(database)/documents/orders/$(incoming().orderId)).data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // 4. Interactive Venture Plan State
+    match /venture_plans/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidVenturePlanState(incoming(), userId)
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && (isOwner(userId) || isAdmin())
+        && isValidVenturePlanState(incoming(), userId)
+        && incoming().userId == existing().userId
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'selectedScenarioId', 'sellingPrice', 'variableCost',
+            'customers', 'purchasesPerCustomer', 'monthlyFixedCost', 'gtmStatuses', 'updatedAt'
+          ])
+        );
+      allow delete: if false;
+    }
+  }
+}

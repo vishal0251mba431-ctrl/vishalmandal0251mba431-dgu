@@ -1,0 +1,6 @@
+{
+  "name": "Campus Cravings",
+  "description": "Hyper-local late-night campus snack, beverage, and study essentials delivery (10 PM – 3 AM) with interactive DGU Venture Quest unit economics and pilot blueprint.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

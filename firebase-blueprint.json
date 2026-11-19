@@ -1,0 +1,284 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated student profile and saved campus delivery preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 150
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "defaultLocation": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "defaultRoomOrDesk": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "defaultWhatsapp": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "surveyRewardUnlocked": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "email",
+        "surveyRewardUnlocked",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A late-night Campus Cravings order placed by an authenticated student.",
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "whatsapp": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 32
+        },
+        "location": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "roomOrDesk": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "items": {
+          "type": "array",
+          "description": "Bounded list of ordered items (1 to 20)."
+        },
+        "freeEnergyDrinkIncluded": {
+          "type": "boolean"
+        },
+        "promoCodeApplied": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "discountAmount": {
+          "type": "number"
+        },
+        "deliveryFee": {
+          "type": "number"
+        },
+        "subtotal": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["upi", "whatsapp"]
+        },
+        "stage": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "delivered"]
+        },
+        "etaSeconds": {
+          "type": "number"
+        },
+        "courierName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "courierBadge": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "courierVehicle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "orderId",
+        "userId",
+        "customerName",
+        "whatsapp",
+        "location",
+        "roomOrDesk",
+        "items",
+        "freeEnergyDrinkIncluded",
+        "promoCodeApplied",
+        "discountAmount",
+        "deliveryFee",
+        "subtotal",
+        "total",
+        "paymentMethod",
+        "stage",
+        "status",
+        "etaSeconds",
+        "courierName",
+        "courierBadge",
+        "courierVehicle",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SurveyResponse": {
+      "title": "SurveyResponse",
+      "description": "Week 4 post-purchase pilot NPS feedback unlocking SURVEY30 cashback.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "orderId": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "npsScore": {
+          "type": "number"
+        },
+        "requestedItem": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "orderId", "npsScore", "requestedItem", "createdAt"]
+    },
+    "VenturePlanState": {
+      "title": "VenturePlanState",
+      "description": "Persisted interactive Unit Economics scenario and GTM experiment tracker.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "selectedScenarioId": {
+          "type": "string",
+          "enum": ["conservative", "base", "ambitious", "custom"]
+        },
+        "sellingPrice": {
+          "type": "number"
+        },
+        "variableCost": {
+          "type": "number"
+        },
+        "customers": {
+          "type": "number"
+        },
+        "purchasesPerCustomer": {
+          "type": "number"
+        },
+        "monthlyFixedCost": {
+          "type": "number"
+        },
+        "gtmStatuses": {
+          "type": "object"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "selectedScenarioId",
+        "sellingPrice",
+        "variableCost",
+        "customers",
+        "purchasesPerCustomer",
+        "monthlyFixedCost",
+        "gtmStatuses",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private student profile and saved campus delivery address/WhatsApp preferences."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Campus Cravings late-night delivery orders scoped to the authenticated student."
+    },
+    "/survey_responses/{responseId}": {
+      "schema": { "$ref": "#/entities/SurveyResponse" },
+      "description": "Post-purchase NPS survey submissions linked to an existing order."
+    },
+    "/venture_plans/{userId}": {
+      "schema": { "$ref": "#/entities/VenturePlanState" },
+      "description": "Saved Unit Economics assumptions and 30-day GTM progress per user."
+    }
+  }
+}
